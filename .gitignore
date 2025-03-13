@@ -1,0 +1,11 @@
+.idea
+__pycache__
+*/runs/
+todo.txt
+*.log
+carla/
+e2e_parking/
+log/
+ckpt/
+efficientnet-b4-6ed6700e.pth
+
