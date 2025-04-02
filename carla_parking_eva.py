@@ -133,6 +133,7 @@ def main():
     argparser.add_argument(
         '--random_seed',
         default=0,
+        type=int,
         help='random seed to initialize env; if sets to 0, use current timestamp as seed (default: 0)')
     argparser.add_argument(
         '--bev_render_device',

@@ -128,9 +128,10 @@ class EgoPosTown04:
         # self.goal_y = goal_y
         # self.y_max = self.goal_y + 8
         # self.y_min = self.goal_y - 8
+
         self.goal_y = goal_y
-        y_up = 8 # evaluation: 8
-        y_down = -8 # evaluation : -8
+        y_up = 7 # evaluation: 7
+        y_down = -7 # evaluation : -7
         self.y_max = self.goal_y + y_up
         if self.goal_y > -236 and self.goal_y < -235: # 2-1 and 3-1 in evaluation
             self.y_min = town04_bound["y_min"] # To prevent outbound of initialization
@@ -151,6 +152,7 @@ class EgoPosTown04:
         if every_parking_num > 1:
             self.y_step = (self.y_max - self.y_min) / (every_parking_num - 1)
             self.y = self.y_min
+            # self.y = self.y_max
         else:
             self.y_step = 0.0
             self.y = self.goal_y
@@ -162,6 +164,8 @@ class EgoPosTown04:
 
     def get_eva_ego_transform(self, every_parking_num, parking_idx):
         self.yaw = self.yaw_to_r if parking_idx < (every_parking_num / 2) else self.yaw_to_l
+        # self.yaw = self.yaw_to_l if parking_idx < (every_parking_num / 2) else self.yaw_to_r
         ego_transform = self.get_cur_ego_transform()
         self.y += self.y_step
+        # self.y -= self.y_step
         return ego_transform

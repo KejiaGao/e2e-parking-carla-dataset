@@ -8,4 +8,4 @@ e2e_parking/
 log/
 ckpt/
 efficientnet-b4-6ed6700e.pth
-
+eva_result/

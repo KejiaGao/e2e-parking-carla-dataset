@@ -11,8 +11,8 @@ parking_model:
   weight_decay: 0.0001
   batch_size: 16
 
-  training_map: "Town04_Opt"
-  validation_map: "Town04_Opt_Val"
+  training_map: "Gen5B_train"
+  validation_map: "Gen5B_val"
   future_frame_nums: 4
   hist_frame_nums: 10
   token_nums: 204

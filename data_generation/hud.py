@@ -72,7 +72,7 @@ class HelpText(object):
     def __init__(self, font, width, height):
         lines = __doc__.split('\n')
         self.font = font
-        self.line_space = 18
+        self.line_space = 27
         self.dim = (780, len(lines) * self.line_space + 12)
         self.pos = (0.5 * width - 0.5 * self.dim[0], 0.5 * height - 0.5 * self.dim[1])
         self.seconds_left = 0
@@ -106,7 +106,7 @@ class HUD(object):
         default_font = 'ubuntumono'
         mono = default_font if default_font in fonts else fonts[0]
         mono = pygame.font.match_font(mono)
-        self._font_mono = pygame.font.Font(mono, 12 if os.name == 'nt' else 14)
+        self._font_mono = pygame.font.Font(mono, 20 if os.name == 'nt' else 24)
         self._notifications = FadingText(font, (width, 40), (0, height - 40))
         self.help = HelpText(pygame.font.Font(mono, 16), width, height)
         self.server_fps = 0
@@ -185,11 +185,11 @@ class HUD(object):
 
     def render(self, display):
         if self._show_info:
-            info_surface = pygame.Surface((220, self.dim[1]))
+            info_surface = pygame.Surface((360, self.dim[1]))
             info_surface.set_alpha(100)
             display.blit(info_surface, (0, 0))
             v_offset = 4
-            bar_h_offset = 100
+            bar_h_offset = 150
             bar_width = 106
             for item in self._info_text:
                 if v_offset + 18 > self.dim[1]:
@@ -213,6 +213,11 @@ class HUD(object):
                         else:
                             rect = pygame.Rect((bar_h_offset, v_offset + 8), (f * bar_width, 6))
                         pygame.draw.rect(display, (255, 255, 255), rect)
+
+                        value_text = "%.2f" % item[1]
+                        value_surface = self._font_mono.render(value_text, True, (255, 255, 255))
+                        display.blit(value_surface, (bar_h_offset + bar_width + 10, v_offset))
+                    
                     item = item[0]
                 if item:  # At this point has to be a str.
                     surface = self._font_mono.render(item, True, (255, 255, 255))

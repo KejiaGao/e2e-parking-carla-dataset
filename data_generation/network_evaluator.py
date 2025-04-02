@@ -53,7 +53,7 @@ class NetworkEvaluator:
         self._goal_reach_y_diff = 0.6              # meter
         self._goal_reach_orientation_diff = 10.0   # degree
 
-        # 1s = 30HZ for our carla setting
+        # 30HZ for our carla setting
         self._frames_per_second = 30
 
         # metric frames
@@ -339,7 +339,7 @@ class NetworkEvaluator:
             self._num_frames_nearby_goal = 0
             self._num_frames_nearby_no_goal = 0
             return
-
+        # print(self._num_frames_in_goal)
         # check success parking
         if self.check_success_slot(closest_goal, t):
             self.start_next_parking()
@@ -486,8 +486,11 @@ class NetworkEvaluator:
                 row_i = df_csv.iloc[[i]]
                 df_row_i = df_row_i.append(row_i)
 
-            row_i_mean = df_row_i.mean(axis=0).to_frame().T
-            row_i_std = (df_row_i.std(axis=0, ddof=0).to_frame().T / math.sqrt(6))
+            # row_i_mean = df_row_i.mean(axis=0).to_frame().T
+            # row_i_std = (df_row_i.std(axis=0, ddof=0).to_frame().T / math.sqrt(6))
+            row_i_mean = df_row_i.select_dtypes(include="number").mean(axis=0).to_frame().T
+            row_i_std = df_row_i.select_dtypes(include="number").std(axis=0, ddof=0).to_frame().T / math.sqrt(self._eva_parking_nums)
+
 
             df_mean = pd.concat([df_mean, row_i_mean], axis=0)
             df_std = pd.concat([df_std, row_i_std], axis=0)
