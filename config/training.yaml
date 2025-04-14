@@ -3,6 +3,7 @@ parking_model:
   data_dir: '../e2e-parking-carla/e2e_parking/'
   log_dir: './log/'
   checkpoint_dir: './ckpt'
+  pretrained_ckpt_dir: './ckpt/pretrained0.ckpt'
   log_every_n_steps: 10
   check_val_every_n_epoch: 5
 

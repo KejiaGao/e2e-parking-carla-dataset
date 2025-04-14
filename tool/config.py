@@ -9,6 +9,7 @@ class Configuration:
     data_dir = None
     log_dir = None
     checkpoint_dir = None
+    pretrained_ckpt_dir = None
     log_every_n_steps = None
     check_val_every_n_epoch = None
 
@@ -65,6 +66,7 @@ def get_cfg(cfg_yaml: dict):
     cfg.data_dir = config['data_dir']
     cfg.log_dir = os.path.join(config['log_dir'], exp_name)
     cfg.checkpoint_dir = os.path.join(config['checkpoint_dir'], exp_name)
+    cfg.pretrained_ckpt_dir = config['pretrained_ckpt_dir']
     cfg.log_every_n_steps = config['log_every_n_steps']
     cfg.check_val_every_n_epoch = config['check_val_every_n_epoch']
 
