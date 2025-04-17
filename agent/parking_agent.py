@@ -406,7 +406,7 @@ class ParkingAgent:
                 self.trans_control.steer = control_signal[2]
                 self.trans_control.reverse = control_signal[3]
                 # print(data_frame['veh_transfrom'])
-                self.speed_limit(data_frame)
+                self.rule_based_control(data_frame)
 
                 if self.show_eva_imgs:
                     self.grid_image, self.atten_avg = self.save_atten_avg_map(data)
@@ -422,7 +422,7 @@ class ParkingAgent:
 
         self.player.apply_control(self.trans_control)
 
-    def speed_limit(self, data_frame):
+    def rule_based_control(self, data_frame):
         # if vehicle stops at initialization, give throttle until Gear turns to 1
         if data_frame['veh_control'].gear == 0:
             self.trans_control.throttle = 0.5
@@ -451,7 +451,7 @@ class ParkingAgent:
         else:
             self.stop_count = 0.0
 
-        if self.stop_count > 21:  # 1s. It can be 2 seconds.
+        if self.stop_count > 21:
             self.boost = True
 
         if self.boost:
@@ -483,7 +483,7 @@ class ParkingAgent:
         if self.stop_intent_step > 0:
             self.stop_intent = True
         
-        # print("self.stop_intent", self.stop_intent)        
+        # print("self.stop_intent:", self.stop_intent)        
         if self.stop_intent:
             self.trans_control.throttle = 0
             self.trans_control.brake = 0.9
@@ -495,7 +495,6 @@ class ParkingAgent:
             self.stop_intent = False
             self.wait_step = 0
         # print(f"stop_intent_step: {self.stop_intent_step}, stop_intent: {self.stop_intent}, wait_step: {self.wait_step}")
-        # print(self.stop_intent, self.trans_control.reverse, self.trans_control.brake, (abs(yaw) < 10 or abs(yaw) > 170))
         # print(data_frame['veh_velocity'].y)
 
         # if the vehicle is near the edge of the parking lot, force the vehicle to stop and reverse.
