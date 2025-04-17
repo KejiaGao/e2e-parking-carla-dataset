@@ -4,7 +4,7 @@ import carla
 import pygame
 
 from data_generation.data_generator import DataGenerator
-from data_generation.keyboard_control import KeyboardControl
+from data_generation.multi_control import MultiControl
 
 
 def game_loop(args):
@@ -20,7 +20,15 @@ def game_loop(args):
         carla_world.unload_map_layer(carla.MapLayer.ParkedVehicles)
 
         data_generator = DataGenerator(carla_world, args)
-        controller = KeyboardControl(data_generator.world)
+        controller = MultiControl(data_generator.world)
+
+        # weather = carla_world.get_weather()
+        # # print("sun_azimuth_angle", weather.sun_azimuth_angle)  # output: 0. 0-360°，0° is north，90° is east，180° is south
+        # # print("sun_altitude_angle", weather.sun_altitude_angle) # output: 75. -90°-90°，0° is horizontal，90° is overhead, -90° is directly below the ground (not visible)
+        # # Modify the position of the sun. 301, 66 or 65, 66 or 275, 66
+        # weather.sun_azimuth_angle = 65
+        # weather.sun_altitude_angle = 66
+        # carla_world.set_weather(weather)
 
         display = pygame.display.set_mode(
             (args.width, args.height),
@@ -111,13 +119,13 @@ def main():
         help='shuffle weather between tasks (default: False)')
     argparser.add_argument(
         '--random_seed',
-        default=0,
         type=int,
+        default=0,
         help='random seed to initialize env; if sets to 0, use current timestamp as seed (default: 0)')
     argparser.add_argument(
         '--bev_render_device',
-        default='cpu',
-        help='device used for BEV Rendering (default: cpu)',
+        default='cuda',
+        help='device used for BEV Rendering (default: cuda)',
         choices=['cpu', 'cuda'])
     args = argparser.parse_args()
 

@@ -4,7 +4,7 @@ import carla
 import pygame
 
 from data_generation.network_evaluator import NetworkEvaluator
-from data_generation.keyboard_control import KeyboardControl
+from data_generation.multi_control import MultiControl
 from agent.parking_agent import ParkingAgent, show_control_info
 
 
@@ -22,7 +22,7 @@ def game_loop(args):
 
         network_evaluator = NetworkEvaluator(carla_world, args)
         parking_agent = ParkingAgent(network_evaluator, args)
-        controller = KeyboardControl(network_evaluator.world)
+        controller = MultiControl(network_evaluator.world)
 
         display = pygame.display.set_mode((args.width, args.height),
                                           pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -132,12 +132,12 @@ def main():
         help='shuffle weather between tasks (default: False)')
     argparser.add_argument(
         '--random_seed',
-        default=0,
         type=int,
+        default=0,
         help='random seed to initialize env; if sets to 0, use current timestamp as seed (default: 0)')
     argparser.add_argument(
         '--bev_render_device',
-        default='cpu',
+        default='cuda',
         help='device used for BEV Rendering (default: cpu)',
         choices=['cpu', 'cuda'])
     argparser.add_argument(

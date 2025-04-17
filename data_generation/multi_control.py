@@ -40,8 +40,8 @@ except ImportError:
     raise RuntimeError('cannot import pygame, make sure pygame package is installed')
 
 
-class KeyboardControl(object):
-    """Class that handles keyboard input."""
+class MultiControl(object):
+    """Class that handles input of three devices: keyboard, gaming controller and wheel & pedals."""
 
     def __init__(self, world):
         self._world = world
@@ -53,6 +53,18 @@ class KeyboardControl(object):
             raise NotImplementedError("Actor type not supported")
         self._steer_cache = 0.0
         self._world.hud.notification("Press 'H' or '?' for help.", seconds=4.0)
+        # Initialize pygame joystick (for Xbox controller)
+        pygame.init()
+        if pygame.joystick.get_count() == 0:
+            # raise RuntimeError('No joystick detected.')
+            world.hud.notification("No joystick detected.")
+        else:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+            if self.joystick.get_numbuttons() < 18:
+                self.input_device = 0 # Gaming controller. I use XBOX controller 2020.
+            else:
+                self.input_device = 1 # Wheel and pedals. I use Logitech G29 Driving Force Steering Wheels & Pedals.
 
     def parse_events(self, client, world, clock):
         # collision or restart task
@@ -158,6 +170,41 @@ class KeyboardControl(object):
                         current_lights ^= carla.VehicleLightState.LeftBlinker
                     elif event.key == K_x:
                         current_lights ^= carla.VehicleLightState.RightBlinker
+            elif event.type == pygame.JOYBUTTONDOWN and self.input_device == 0:
+                if self.joystick.get_button(3): # Restart: Button 3 (Button Y)
+                    world.keyboard_restart_task = True
+                elif self.joystick.get_button(5): # Toggle view: Button 5 (RB, Right Bumper)
+                    world.camera_manager.toggle_camera()                
+                if isinstance(self._control, carla.VehicleControl):
+                    if self.joystick.get_button(0): # Switch first / reverse gear: Button 0 (Button A)
+                        self._control.gear = 1 if self._control.reverse else -1  
+                    elif self.joystick.get_button(10): # Switch manual / automatic gear shift: Button 10 (RSB, Right Stick Button)
+                        self._control.manual_gear_shift = not self._control.manual_gear_shift
+                        self._control.gear = world.player.get_control().gear
+                        world.hud.notification('%s Transmission' %
+                                               ('Manual' if self._control.manual_gear_shift else 'Automatic'))                                                  
+                    elif self._control.manual_gear_shift and self.joystick.get_button(2): # Manual downshift: Button 2 (Button X)
+                        self._control.gear = max(-1, self._control.gear - 1)
+                    elif self._control.manual_gear_shift and self.joystick.get_button(1): # Manual upshift: Button 1 (Button B)
+                        self._control.gear = self._control.gear + 1
+            elif event.type == pygame.JOYBUTTONDOWN and self.input_device == 1:
+                if self.joystick.get_button(3): # Restart: Button 3 (Button Triangle)
+                    world.keyboard_restart_task = True
+                elif self.joystick.get_button(6): # Toggle view: Button 6 (R2)
+                    world.camera_manager.toggle_camera()                
+                if isinstance(self._control, carla.VehicleControl):
+                    if self.joystick.get_button(4): # Switch first / reverse gear: Button 4 (Right paddle)
+                        self._control.gear = 1 if self._control.reverse else -1  
+                    elif self.joystick.get_button(10): # Switch manual / automatic gear shift: Button 10 (R3)
+                        self._control.manual_gear_shift = not self._control.manual_gear_shift
+                        self._control.gear = world.player.get_control().gear
+                        world.hud.notification('%s Transmission' %
+                                               ('Manual' if self._control.manual_gear_shift else 'Automatic'))                                                  
+                    elif self._control.manual_gear_shift and self.joystick.get_button(5): # Manual downshift: Button 5 (Left paddle)
+                        self._control.gear = max(-1, self._control.gear - 1)
+                    elif self._control.manual_gear_shift and self.joystick.get_button(4): # Manual upshift: Button 4 (Right paddle)
+                        self._control.gear = self._control.gear + 1
+                
 
         if isinstance(self._control, carla.VehicleControl):
             self._parse_vehicle_keys(pygame.key.get_pressed(), clock.get_time())
@@ -204,6 +251,37 @@ class KeyboardControl(object):
         self._control.steer = round(self._steer_cache, 1)
         self._control.hand_brake = keys[K_s]
 
+        if pygame.joystick.get_count() != 0:            
+            if self.input_device == 0:
+                throttle = self.joystick.get_axis(5)  # Throttle: Axis 5 (RT, Right Trigger)
+                brake = self.joystick.get_axis(2)     # Brake: Axis 2 (LT, Left Trigger)
+                steer = self.joystick.get_axis(0)     # Steering: Axis 0 (LS, Left Stick)
+                hand_brake = self.joystick.get_button(4)  # Handbrake: Button 4 (LB, Left Bumper)
+
+                throttle = max(0, min(0.25 * (throttle + 1), 0.5)) # Ensure throttle value is within [0, 0.5]
+                brake = max(0, min(0.5 * (brake + 1), 1)) # Ensure brake value is within [0, 1]
+            
+                self._control.throttle = round(throttle / 0.05) * 0.05
+                self._control.brake = round(brake / 0.2) * 0.2
+                self._control.steer = round(max(-0.7, min(steer * 0.7, 0.7)), 1)  # Ensure steer value is within [-0.7, 0.7]
+                self._control.hand_brake = hand_brake
+
+            elif self.input_device == 1:
+                throttle = self.joystick.get_axis(2)  # Throttle: Axis 2 (Throttle pedal, on the right)
+                brake = self.joystick.get_axis(3)     # Brake: Axis 3 (Brake pedal, in the middle)
+                steer = self.joystick.get_axis(0)     # Steering: Axis 0 (Wheel)
+                hand_brake = self.joystick.get_button(7)  # Handbrake: Button 7 (L2)
+
+                throttle = max(0, min(-0.5 * (throttle - 1), 0.5)) # Ensure throttle value is within [0, 0.5]
+                brake = max(0, min(-0.5 * (brake - 1), 1)) # Ensure brake value is within [0, 1]
+            
+                self._control.throttle = round(throttle / 0.05) * 0.05
+                self._control.brake = round(brake / 0.2) * 0.2
+                self._control.steer = round(max(-0.7, min(steer, 0.7)), 1)  # Ensure steer value is within [-0.7, 0.7]
+                self._control.hand_brake = hand_brake
+
+
     @staticmethod
     def _is_quit_shortcut(key):
         return (key == K_ESCAPE) or (key == K_q and pygame.key.get_mods() & KMOD_CTRL)
+    
