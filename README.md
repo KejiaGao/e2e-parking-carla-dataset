@@ -26,7 +26,7 @@ CUDA 11.7 is used as default. The original authors also validate the compatibili
 ```
 cd e2e-parking-carla-dataset/
 ```
-Download the dataset in the current directory： https://pan.baidu.com/s/1PoMSfgZQMnUGlhi7S5fFZw?pwd=2ik6
+Download the dataset in the current directory with this link: https://pan.baidu.com/s/1PoMSfgZQMnUGlhi7S5fFZw?pwd=2ik6
 ```
 mkdir e2e_parking
 unzip E2EParking_dataset_Gen5B.zip -d e2e_parking
