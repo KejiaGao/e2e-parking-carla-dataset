@@ -11,3 +11,4 @@ efficientnet-b4-6ed6700e.pth
 eva_result/
 config/training.yaml
 pl_train.py
+test.py

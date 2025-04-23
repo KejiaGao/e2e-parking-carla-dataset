@@ -226,6 +226,7 @@ class NetworkEvaluator:
                                                                                   self._eva_parking_idx)
         self._world.player.set_transform(self._ego_transform)
         self._world.player.apply_control(carla.VehicleControl())
+        self._world.clear_trajectory()
 
     def is_complete_slot(self, eva_parking_idx):
         return eva_parking_idx >= self._eva_parking_nums

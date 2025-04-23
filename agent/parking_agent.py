@@ -241,17 +241,6 @@ class ParkingAgent:
         self.boost = False
         self.boot_step = 0
 
-        self.stop_intent_step = 0
-        self.stop_intent = False
-        self.wait_step = 0
-
-        self.near_edge_step = 0
-        self.near_edge = False
-        self.avoid_out_step = 0
-        self.steer_set = 0
-        self.forced_reverse = False
-        self.forced_reverse_step = 0        
-
         self.init_agent()
 
         plt.ion()
@@ -380,14 +369,14 @@ class ParkingAgent:
 
         if self.step % self.process_frequency == 0:
             data_frame = self.world.sensor_data_frame
-            
+
             if not data_frame:
                 return
 
             vehicle_transform = data_frame['veh_transfrom']
             imu_data = data_frame['imu']
+
             data = self.get_model_data(data_frame)
-            # print(data['target_point'][0, 1])
 
             self.model.eval()
             with torch.no_grad():
@@ -405,8 +394,8 @@ class ParkingAgent:
                 self.trans_control.brake = control_signal[1]
                 self.trans_control.steer = control_signal[2]
                 self.trans_control.reverse = control_signal[3]
-                # print(data_frame['veh_transfrom'])
-                self.rule_based_control(data_frame)
+
+                self.speed_limit(data_frame)
 
                 if self.show_eva_imgs:
                     self.grid_image, self.atten_avg = self.save_atten_avg_map(data)
@@ -422,36 +411,30 @@ class ParkingAgent:
 
         self.player.apply_control(self.trans_control)
 
-    def rule_based_control(self, data_frame):
+    def speed_limit(self, data_frame):
         # if vehicle stops at initialization, give throttle until Gear turns to 1
         if data_frame['veh_control'].gear == 0:
             self.trans_control.throttle = 0.5
 
-        x_location = data_frame['veh_transfrom'].location.x
-        y_location = data_frame['veh_transfrom'].location.y
-
         speed = (3.6 * math.sqrt(
             data_frame['veh_velocity'].x ** 2 + data_frame['veh_velocity'].y ** 2 + data_frame['veh_velocity'].z ** 2))
-        
-        yaw = data_frame['veh_transfrom'].rotation.yaw
 
-        # limit the vehicle speed within 7.5 km/h when reverse is False
-        if not self.trans_control.reverse and speed >= 7.5:
+        # limit the vehicle speed within 15km/h when reverse is False
+        if not self.trans_control.reverse and speed >= 12:
             self.trans_control.throttle = 0.0
 
-        # limit the vehicle speed within 7.5 km/h when reverse is True
-        if self.trans_control.reverse and speed >= 7.5: #10
+        # limit the vehicle speed within 8km/h when reverse is True
+        if self.trans_control.reverse and speed >= 10:
             self.trans_control.throttle = 0.0
 
-        # if brake and throttle both not on, and speed < 2 for more than 2 seconds, give it a small throttle for 1 second
-        if not self.trans_control.reverse and self.trans_control.throttle < 1e-5 and self.trans_control.brake < 1e-5 and speed < 2.0:
-            self.stop_count += 1
-        elif self.trans_control.reverse and self.trans_control.throttle < 0.11 and self.trans_control.brake < 1e-5 and speed < 2.0: # 0.11
+        # if brake and throttle both not on, and speed < 2 for more than 2 seconds, give it a small throttle for 1
+        # second
+        if self.trans_control.throttle < 1e-5 and self.trans_control.brake < 1e-5 and speed < 2.0:
             self.stop_count += 1
         else:
             self.stop_count = 0.0
 
-        if self.stop_count > 21:
+        if self.stop_count > 10:  # 1s
             self.boost = True
 
         if self.boost:
@@ -461,85 +444,6 @@ class ParkingAgent:
         if self.boot_step > 10 or self.trans_control.brake > 1e-5:  # 1s
             self.boot_step = 0
             self.boost = False
-            self.stop_count = 0.0
-        
-        # if the vehicle reaches target, keep the throttle = 0 and brake = 0.9
-        # print(self.net_eva.eva_parking_goal)
-        # print(data_frame['veh_transfrom'].location.x)
-        # if self.trans_control.reverse \
-        #     and (self.trans_control.brake > 0.5 or self.stop_intent) \
-        #     and (abs(yaw) < 10 or abs(yaw) > 170):
-        
-        if  abs(x_location - self.net_eva.eva_parking_goal[0]) < 0.075 \
-              or (abs(yaw) < 10 or abs(yaw) > 170) and self.stop_intent:
-            self.stop_intent_step += 1
-        else:
-            if self.stop_intent_step > 0:
-                self.stop_intent_step -= 1
-            if self.stop_intent_step == 0:
-                self.stop_intent = False
-                self.wait_step = 0    
-
-        if self.stop_intent_step > 0:
-            self.stop_intent = True
-        
-        # print("self.stop_intent:", self.stop_intent)        
-        if self.stop_intent:
-            self.trans_control.throttle = 0
-            self.trans_control.brake = 0.9
-            self.trans_control.steer = 0
-            self.wait_step += 1
-        
-        if self.wait_step > 21: 
-            self.stop_intent_step = 0
-            self.stop_intent = False
-            self.wait_step = 0
-        # print(f"stop_intent_step: {self.stop_intent_step}, stop_intent: {self.stop_intent}, wait_step: {self.wait_step}")
-        # print(data_frame['veh_velocity'].y)
-
-        # if the vehicle is near the edge of the parking lot, force the vehicle to stop and reverse.
-        if not self.trans_control.reverse \
-            and y_location < -239.4 \
-            and data_frame['veh_velocity'].y < -0.01:
-            self.near_edge_step += 1
-        elif self.near_edge_step > 0:
-            self.near_edge_step -= 1
-        else:
-            self.near_edge_step = 0
-            self.near_edge = False
-
-        if self.near_edge_step > 3:  # 0.3s
-            self.near_edge = True 
-        
-        if self.near_edge:
-            self.trans_control.throttle = 0
-            self.trans_control.brake = 0.3
-            self.trans_control.reverse = True
-            self.avoid_out_step += 1
-
-        if self.avoid_out_step > 4:
-            self.avoid_out_step = 0
-            self.steer_set = 0.7 if x_location < self.net_eva.eva_parking_goal[0] else -0.7
-            self.near_edge = False
-            self.forced_reverse = True
-
-        if self.forced_reverse:
-            self.trans_control.reverse = True
-            self.trans_control.throttle = 0.3
-            self.trans_control.steer = self.steer_set
-            self.trans_control.brake = 0
-            self.forced_reverse_step += 1
-        elif self.forced_reverse_step > 0:
-            self.forced_reverse_step -= 1
-        else:
-            self.forced_reverse_step = 0
-            self.forced_reverse = False
-
-        if self.forced_reverse_step > 25:
-            self.forced_reverse = False
-            self.forced_reverse_step = 0
-
-
 
     def get_model_data(self, data_frame):
 

@@ -36,6 +36,7 @@ class World(object):
         settings.fixed_delta_seconds = float(1 / 30)  # 30 FPS
         settings.synchronous_mode = True
         self._world.apply_settings(settings)
+        self.trajectory_points = []
 
         if args.map == 'Town04_Opt':
             self._parking_spawn_points = parking_position.parking_vehicle_locations_Town04.copy()
@@ -102,13 +103,16 @@ class World(object):
         self._rotation_diff_to_goal = 0
 
         self._need_init_ego_state = True
+    
+    def clear_trajectory(self):
+        self.trajectory_points.clear()
 
     def restart(self, seed, target_index, ego_transform):
 
         # spawn static vehicles in the parking lot
         if self._shuffle_static_vhe:
             self.init_static_npc(seed, target_index)
-
+        self.clear_trajectory()
         # init the player position
         self._player.set_transform(ego_transform)
         self._player.apply_control(carla.VehicleControl())
@@ -121,7 +125,7 @@ class World(object):
 
         if self._shuffle_weather:
             self.next_weather()
-
+                    
         self._camera_manager.clear_saved_images()
 
         self._need_init_ego_state = True
@@ -209,6 +213,7 @@ class World(object):
         self.sensor_data_frame.clear()
         self._sensor_queue = Queue()
         self._step = -1
+        self.clear_trajectory()
 
         # init the player position
         self._player.set_transform(ego_transform)
@@ -216,7 +221,7 @@ class World(object):
         self._player.set_target_velocity(carla.Vector3D(0, 0, 0))
         # self._spectator.set_transform(carla.Transform(ego_transform.location + carla.Location(z=50),
         #                                               carla.Rotation(pitch=-90)))
-
+        
         self._camera_manager.clear_saved_images()
 
         self._need_init_ego_state = True
@@ -515,6 +520,17 @@ class World(object):
             self._collision_sensor.is_collision = False
             self._keyboard_restart_task = False
             return True
+        
+        self.trajectory_points.append((t.x, t.y, t.z))
+
+        for pt in self.trajectory_points:
+            loc = carla.Location(x=pt[0], y=pt[1], z=pt[2] + 0.1)
+            self._world.debug.draw_point(
+                loc,
+                size=0.1,
+                color=carla.Color(255, 0, 0),
+                life_time=0.1
+            )
 
         return False
 

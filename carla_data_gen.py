@@ -25,8 +25,9 @@ def game_loop(args):
         # weather = carla_world.get_weather()
         # # print("sun_azimuth_angle", weather.sun_azimuth_angle)  # output: 0. 0-360°，0° is north，90° is east，180° is south
         # # print("sun_altitude_angle", weather.sun_altitude_angle) # output: 75. -90°-90°，0° is horizontal，90° is overhead, -90° is directly below the ground (not visible)
-        # # Modify the position of the sun. 301, 66 or 65, 66 or 275, 66
-        # weather.sun_azimuth_angle = 65
+        # # Modify the position of the sun. (sun_azimuth_angle, sun_altitude_angle): (301, 66) or (65, 66)
+        # # set (301, 66) to project the shadow on slot 3-8; set (65, 66) to project the shadow on slot 3-10
+        # weather.sun_azimuth_angle = 301
         # weather.sun_altitude_angle = 66
         # carla_world.set_weather(weather)
 
